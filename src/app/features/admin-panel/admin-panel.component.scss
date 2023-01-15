@@ -1,0 +1,77 @@
+main{
+  background-color: #d5eaff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  mat-drawer-container{
+    height: 600px;
+    width: 100%;
+    mat-drawer-content{
+      header{
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 0;
+        button{
+          height: 40px;
+          margin-left: 15px;
+        }
+      }
+    }
+    mat-drawer{
+      form{
+        width: 400px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+          div{
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+          }
+        .chip-input-container {
+          display: flex;
+          align-items: center;
+
+          .chip-list {
+            display: flex;
+            flex-wrap: wrap;
+
+            .chip {
+              background-color: #e0e0e0;
+              color: #333;
+              border-radius: 16px;
+              padding: 4px 12px;
+              margin: 8px;
+              font-size: 14px;
+              display: flex;
+              align-items: center;
+
+              button {
+                background: transparent;
+                border: 0;
+                color: #333;
+                margin-left: 8px;
+                cursor: pointer;
+              }
+            }
+          }
+          select {
+            padding: 8px;
+            margin-left: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+          }
+        }
+
+
+        hr{
+          margin: 15px 0;
+        }
+      }
+    }
+  }
+}

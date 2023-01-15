@@ -1,0 +1,94 @@
+<main>
+  <mat-drawer-container class="example-container">
+    <mat-drawer-content>
+      <header>
+        <mat-form-field appearance="fill">
+          <input [formControl]="searchField" type="text" matInput placeholder="Search" >
+        </mat-form-field>
+        <button mat-stroked-button color="accent">Add New User</button>
+      </header>
+      <div class="mat-elevation-z8">
+        <table mat-table [dataSource]="dataSource">
+
+          <!-- Position Column -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef> Email </th>
+            <td mat-cell *matCellDef="let element"> {{element.email}} </td>
+          </ng-container>
+
+          <!-- Name Column -->
+          <ng-container matColumnDef="firstName">
+            <th mat-header-cell *matHeaderCellDef> First Name </th>
+            <td mat-cell *matCellDef="let element"> {{element.firstName}} </td>
+          </ng-container>
+
+          <!-- Weight Column -->
+          <ng-container matColumnDef="lastName">
+            <th mat-header-cell *matHeaderCellDef> Last Name </th>
+            <td mat-cell *matCellDef="let element"> {{element.lastName}} </td>
+          </ng-container>
+
+          <!-- Symbol Column -->
+          <ng-container matColumnDef="roles">
+            <th mat-header-cell *matHeaderCellDef> Roles </th>
+            <td mat-cell *matCellDef="let element"> {{element.roles}} </td>
+          </ng-container>
+          <ng-container matColumnDef="locked">
+            <th mat-header-cell *matHeaderCellDef> Status </th>
+            <td mat-cell *matCellDef="let element"> {{element.locked}} </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]"
+                       showFirstLastButtons
+                       aria-label="Select page of periodic elements">
+        </mat-paginator>
+      </div>
+    </mat-drawer-content>
+    <mat-drawer mode="side" position="end" opened="matDrawer_Open">
+      <form class="example-form" [formGroup]="userForm">
+        <mat-form-field appearance="fill">
+          <mat-label>First Name</mat-label>
+          <input formControlName="firstName" matInput placeholder="Leonardo" required>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Last Name</mat-label>
+          <input formControlName="lastName" matInput placeholder="Da Vinci" required>
+        </mat-form-field>
+        <div>
+          <mat-form-field appearance="fill">
+            <mat-label>Email</mat-label>
+            <input formControlName="email" matInput placeholder="Example@mail.com" required>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Users Status</mat-label>
+            <select matNativeControl required formControlName="userStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>>
+            </select>
+          </mat-form-field>
+        </div>
+        <h4>Add New Roles</h4>
+        <div class="chip-input-container">
+          <div class="chip-list">
+            <div class="chip" *ngFor="let role of selectedRoles">
+              {{role}}
+              <button (click)="removeRole(role)">x</button>
+            </div>
+          </div>
+          <select (change)="addRole($event)">
+            <option *ngFor="let role of UserRoles?.data?.entities" value="{{role.code}}">{{ role.name }}</option>
+          </select>
+        </div>
+        <hr>
+        <div>
+          <button mat-raised-button>Cancel</button>
+          <button mat-raised-button color="primary" (click)="saveUser()" [disabled]="userForm.invalid || selectedRoles.length === 0">Save</button>
+        </div>
+      </form>
+    </mat-drawer>
+  </mat-drawer-container>
+</main>
