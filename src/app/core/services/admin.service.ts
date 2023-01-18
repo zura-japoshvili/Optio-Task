@@ -38,16 +38,12 @@ export class AdminService {
     }, this.HTTP_OPTIONS)
   }
   // This function updates or adds new user, it's defends if id is already exists or not
-  public saveUser(userData: UserDataInt) {
-    this.http.post("https://development.api.optio.ai/api/v2/admin/users/save", userData, this.HTTP_OPTIONS).subscribe((value) => {
-      console.log(value)
-    })
+  public saveUser(userData: UserDataInt): Observable<UserDataInt> {
+    return this.http.post<UserDataInt>("https://development.api.optio.ai/api/v2/admin/users/save", userData, this.HTTP_OPTIONS);
   }
   // delete user from db
-  public deleteUser(id: string){
-    this.http.post("https://development.api.optio.ai/api/v2/admin/users/remove", id, this.HTTP_OPTIONS).subscribe((value)=>{
-      console.log(value)
-    });
+  public deleteUser(id: string): Observable<{success: boolean}>{
+    return this.http.post<{success : boolean}>("https://development.api.optio.ai/api/v2/admin/users/remove", {id}, this.HTTP_OPTIONS);
   }
   // it's searches and sorts data, then returns it
   public findUser(value: any): Observable<{data: {entities: UserDataInt[]}}>{
@@ -55,8 +51,7 @@ export class AdminService {
   }
 
   public findUserById(id: string){
-    this.http.post("https://development.api.optio.ai/api/v2/admin/users/find-one", id, this.HTTP_OPTIONS).subscribe((value) => {
-
+    this.http.post("https://development.api.optio.ai/api/v2/admin/users/find-one", {id}, this.HTTP_OPTIONS).subscribe((value) => {
     })
   }
 }

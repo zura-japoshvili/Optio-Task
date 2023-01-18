@@ -5,72 +5,101 @@
         <mat-form-field appearance="fill">
           <input [formControl]="searchField" type="text" matInput placeholder="Search" >
         </mat-form-field>
-        <button mat-stroked-button color="accent">Add New User</button>
+        <button mat-stroked-button color="primary" (click)="openCloseDrawer(true)">+ Add New</button>
       </header>
-      <div class="mat-elevation-z8">
-        <table mat-table [dataSource]="dataSource">
+      <div *ngIf="dataSource" class="mat-elevation-z8">
+        <table class="w-100" mat-table [dataSource]="dataSource" matSort>
 
-          <!-- Position Column -->
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef> Email </th>
-            <td mat-cell *matCellDef="let element"> {{element.email}} </td>
+          <!-- Email Column -->
+          <ng-container matColumnDef="email" class="email-cell">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="email"> Email </th>
+            <td mat-cell *matCellDef="let element" (click)="setUpdatedata(element)"> {{element.email}} </td>
           </ng-container>
 
-          <!-- Name Column -->
+          <!-- First Name Column -->
           <ng-container matColumnDef="firstName">
-            <th mat-header-cell *matHeaderCellDef> First Name </th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="firstName"> First Name </th>
             <td mat-cell *matCellDef="let element"> {{element.firstName}} </td>
           </ng-container>
 
-          <!-- Weight Column -->
+          <!-- Last Name Column -->
           <ng-container matColumnDef="lastName">
-            <th mat-header-cell *matHeaderCellDef> Last Name </th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="lastName"> Last Name </th>
             <td mat-cell *matCellDef="let element"> {{element.lastName}} </td>
           </ng-container>
 
-          <!-- Symbol Column -->
+          <!-- Roles Column -->
           <ng-container matColumnDef="roles">
             <th mat-header-cell *matHeaderCellDef> Roles </th>
             <td mat-cell *matCellDef="let element"> {{element.roles}} </td>
           </ng-container>
+
+          <!-- Status Column -->
           <ng-container matColumnDef="locked">
-            <th mat-header-cell *matHeaderCellDef> Status </th>
-            <td mat-cell *matCellDef="let element"> {{element.locked}} </td>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="locked"> Status </th>
+            <td mat-cell *matCellDef="let element"> {{element.locked? "Active" : "Inactive"}} </td>
+          </ng-container>
+
+          <!--  Action for delete button-->
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let element">
+              <button mat-raised-button color="warn" (click)="deleteUser(element)">Delete</button>
+            </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-
         <mat-paginator [pageSizeOptions]="[5, 10, 20]"
                        showFirstLastButtons
                        aria-label="Select page of periodic elements">
         </mat-paginator>
       </div>
     </mat-drawer-content>
-    <mat-drawer mode="side" position="end" opened="matDrawer_Open">
+    <mat-drawer mode="side" position="end" #drawer opened>
+      <h4 class="exit-icon" (click)="openCloseDrawer(false)">X</h4>
       <form class="example-form" [formGroup]="userForm">
         <mat-form-field appearance="fill">
           <mat-label>First Name</mat-label>
           <input formControlName="firstName" matInput placeholder="Leonardo" required>
+          <mat-error *ngIf="userForm.get('firstName')?.hasError('required')">
+            First name is <strong>required</strong>
+          </mat-error>
+          <mat-error *ngIf="userForm.get('firstName')?.hasError('pattern')">
+            The first name must consist of only letters
+          </mat-error>
         </mat-form-field>
         <mat-form-field appearance="fill">
           <mat-label>Last Name</mat-label>
           <input formControlName="lastName" matInput placeholder="Da Vinci" required>
+          <mat-error *ngIf="userForm.get('lastName')?.hasError('required')">
+            Last name is <strong>required</strong>
+          </mat-error>
+          <mat-error *ngIf="userForm.get('lastName')?.hasError('pattern')">
+            The last name must consist of only letters
+          </mat-error>
         </mat-form-field>
-        <div>
-          <mat-form-field appearance="fill">
-            <mat-label>Email</mat-label>
-            <input formControlName="email" matInput placeholder="Example@mail.com" required>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Users Status</mat-label>
-            <select matNativeControl required formControlName="userStatus">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>>
-            </select>
-          </mat-form-field>
-        </div>
+        <mat-form-field appearance="fill">
+          <mat-label>Email</mat-label>
+          <input formControlName="email" matInput placeholder="Example@mail.com" required>
+          <mat-error *ngIf="userForm.get('email')?.hasError('required')">
+            Email is <strong>required</strong>
+          </mat-error>
+          <mat-error *ngIf="userForm.get('email')?.errors">
+            Email isn't valid
+          </mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Users Status</mat-label>
+          <select matNativeControl required formControlName="userStatus">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>>
+          </select>
+          <mat-error *ngIf="userForm.get('userStatus')?.hasError('required')">
+            User status is <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
         <h4>Add New Roles</h4>
         <div class="chip-input-container">
           <div class="chip-list">
@@ -85,8 +114,9 @@
         </div>
         <hr>
         <div>
-          <button mat-raised-button>Cancel</button>
-          <button mat-raised-button color="primary" (click)="saveUser()" [disabled]="userForm.invalid || selectedRoles.length === 0">Save</button>
+          <button (click)="openCloseDrawer(false)" mat-raised-button>Cancel</button>
+          <button *ngIf="!isUpdateOpen" mat-raised-button color="primary" (click)="saveUser()" [disabled]="userForm.invalid || selectedRoles.length === 0">Save</button>
+          <button *ngIf="isUpdateOpen" mat-raised-button color="primary" (click)="updateUserData()" [disabled]="userForm.invalid || selectedRoles.length === 0">Update</button>
         </div>
       </form>
     </mat-drawer>

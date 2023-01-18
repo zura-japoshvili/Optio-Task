@@ -15,6 +15,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {MatPaginatorModule} from "@angular/material/paginator";
 import {MatTableModule} from "@angular/material/table";
+import {MatSortModule} from "@angular/material/sort";
 
 
 
@@ -39,6 +40,7 @@ import {MatTableModule} from "@angular/material/table";
     ReactiveFormsModule,
     MatPaginatorModule,
     MatTableModule,
+    MatSortModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
