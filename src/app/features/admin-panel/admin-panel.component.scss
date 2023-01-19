@@ -49,6 +49,9 @@ main{
           display: flex;
           justify-content: space-between;
         }
+        h4{
+          color: #4f4848;
+        }
         .chip-input-container {
           display: flex;
           align-items: center;
@@ -57,7 +60,8 @@ main{
             flex-wrap: wrap;
             .chip {
               background-color: #e0e0e0;
-              color: #333;
+              color: #4f3333;
+              font-weight: 700;
               border-radius: 16px;
               padding: 4px 12px;
               margin: 8px;

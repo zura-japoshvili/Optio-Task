@@ -71,7 +71,7 @@ export class AdminPanelComponent implements OnInit {
               private _snackBar: MatSnackBar) {
     // When using the search field, a request is generated every half second
     // and a list of users matching its value is searched.
-    // If search field is empty nothing will happen
+    // If the search field is empty, all user data will be loaded
     this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
       this._adminService.findUser({search: text}).pipe(
         tap((value) => {
