@@ -16,6 +16,10 @@ import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {MatPaginatorModule} from "@angular/material/paginator";
 import {MatTableModule} from "@angular/material/table";
 import {MatSortModule} from "@angular/material/sort";
+import {RouterModule} from "@angular/router";
+import {RouterTestingModule} from "@angular/router/testing";
+import {AppRoutingModule} from "./app-routing.module";
+
 
 
 
@@ -41,6 +45,9 @@ import {MatSortModule} from "@angular/material/sort";
     MatPaginatorModule,
     MatTableModule,
     MatSortModule,
+    RouterModule,
+    RouterTestingModule,
+    AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

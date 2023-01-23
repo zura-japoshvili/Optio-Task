@@ -42,7 +42,7 @@ export class AdminService {
     return this.http.post<{success : boolean}>("https://development.api.optio.ai/api/v2/admin/users/remove", {id}, this.HTTP_OPTIONS);
   }
   // it's searches and sorts data, then returns it
-  public findUser(value: { search: string }): Observable<{ data: { entities: UserDataInt[] } }>{
+  public findUser(value: { search: string, pageSize: number }): Observable<{ data: { entities: UserDataInt[] } }>{
     return this.http.post<{data: {entities: UserDataInt[]}}>("https://development.api.optio.ai/api/v2/admin/users/find", value, this.HTTP_OPTIONS);
   }
 

@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import {AdminService} from "../../core/services/admin.service";
 import {RolesInt} from "../../core/interfaces/rolesInt";
-import {FormControl, FormGroup, Validators} from "@angular/forms";
+import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
 import {UserDataInt} from "../../core/interfaces/UserDataInt";
 import {catchError, debounceTime, of, tap} from "rxjs";
 import {MatTableDataSource} from "@angular/material/table";
@@ -15,6 +15,9 @@ import {MatPaginator} from "@angular/material/paginator";
 import {MatDrawer} from "@angular/material/sidenav";
 import {MatSort} from "@angular/material/sort";
 import {MatSnackBar} from "@angular/material/snack-bar";
+import {ActivatedRoute, Router} from "@angular/router";
+import { RouterModule } from '@angular/router';
+
 
 
 
@@ -25,7 +28,8 @@ import {MatSnackBar} from "@angular/material/snack-bar";
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MatSnackBar]
+    providers: [MatSnackBar],
+
 })
 export class AdminPanelComponent implements OnInit {
 
@@ -53,7 +57,7 @@ export class AdminPanelComponent implements OnInit {
   UserRoles: RolesInt = { data: { entities: [] }, success: false };
 
 
-  userForm = new FormGroup({
+  public userForm = new FormGroup({
     firstName: new FormControl("", [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]),
     lastName: new FormControl("", [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]),
     email: new FormControl("",[Validators.required, Validators.email]),
@@ -68,12 +72,14 @@ export class AdminPanelComponent implements OnInit {
 
   constructor(private _adminService: AdminService,
               private _change: ChangeDetectorRef,
-              private _snackBar: MatSnackBar) {
+              private _snackBar: MatSnackBar,
+              private route: ActivatedRoute,
+              private router: Router) {
     // When using the search field, a request is generated every half second
     // and a list of users matching its value is searched.
     // If the search field is empty, all user data will be loaded
     this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
-      this._adminService.findUser({search: text}).pipe(
+      this._adminService.findUser({search: text, pageSize: 500}).pipe(
         tap((value) => {
           this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
           this.dataSource.paginator = this.paginator;
@@ -89,6 +95,32 @@ export class AdminPanelComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // When changes are made to the form, it will automatically be saved
+    // in the application URL, so that the data entered from the beginning
+    // will not be lost and the user will not have to enter it again.
+    this.userForm.valueChanges.subscribe(() => {
+      const {firstName, lastName, email, userStatus} = this.userForm.value;
+      this.router.navigate(['/admin-panel'], {
+        queryParams: { firstName, lastName, email, userStatus },
+        queryParamsHandling: "merge",
+      });
+    });
+    // After the refresh, the data will be updated automatically.
+    this.route.queryParamMap.subscribe(queryParamMap =>{
+      if (queryParamMap.has('firstName')) {
+        this.userForm.get('firstName')?.setValue(queryParamMap.get('firstName'));
+      }
+      if (queryParamMap.has('lastName')) {
+        this.userForm.get('lastName')?.setValue(queryParamMap.get('lastName'));
+      }
+      if (queryParamMap.has('email')) {
+        this.userForm.get('email')?.setValue(queryParamMap.get('email'));
+      }
+      if (queryParamMap.has('userStatus')) {
+        this.userForm.get('userStatus')?.setValue(queryParamMap.get('userStatus'));
+      }
+    })
+
     // when component is loaded, it's automatically update user roles
     this._adminService.getRoles().pipe(
       tap((value) => {
@@ -102,8 +134,9 @@ export class AdminPanelComponent implements OnInit {
     ).subscribe();
 
     // when component loads, it's automatically load every user data in table
-    this._adminService.findUser({search: ""}).pipe(
+    this._adminService.findUser({search: '', pageSize: 500,}).pipe(
       tap((value) => {
+        console.log(value)
         this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
         this.dataSource.paginator = this.paginator;
         this.dataSource.sort = this.sort;
@@ -114,7 +147,9 @@ export class AdminPanelComponent implements OnInit {
           return of ([]);
       })
     ).subscribe();
+
   }
+
 
   // For pop up alerts
   openSnackBar(message: string, action: string) {
@@ -134,6 +169,16 @@ export class AdminPanelComponent implements OnInit {
 
     this._adminService.saveUser(userData).pipe(
       tap((value) => {
+        // When the user data is stored in the database, the data in the URL will be deleted.
+        // and also reset form value
+        this.userForm.reset();
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          queryParamsHandling: "merge",
+        });
+
+
         this.dataSource.data.push(value.data);
         this.dataSource.paginator = this.paginator;
         this.dataSource.sort = this.sort;

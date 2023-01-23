@@ -59,7 +59,7 @@
     </mat-drawer-content>
     <mat-drawer mode="side" position="end" #drawer opened>
       <h4 class="exit-icon" (click)="openCloseDrawer(false)">X</h4>
-      <form class="example-form" [formGroup]="userForm">
+      <form class="example-form" [formGroup]="userForm" >
         <mat-form-field appearance="fill">
           <mat-label>First Name</mat-label>
           <input formControlName="firstName" matInput placeholder="Leonardo" required>
