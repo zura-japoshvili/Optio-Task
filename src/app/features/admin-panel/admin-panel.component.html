@@ -8,7 +8,7 @@
         <button mat-stroked-button color="primary" (click)="openCloseDrawer(true)">+ Add New</button>
       </header>
       <div *ngIf="dataSource" class="mat-elevation-z8">
-        <table class="w-100" mat-table [dataSource]="dataSource" matSort>
+        <table class="w-100"  mat-table [dataSource]="dataSource" matSort>
 
           <!-- Email Column -->
           <ng-container matColumnDef="email" class="email-cell">
@@ -51,7 +51,10 @@
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-        <mat-paginator [pageSizeOptions]="[5, 10, 20]"
+        <mat-paginator [length]="totalCount"
+                       [pageSize]="pageSize"
+                       [pageIndex]="pageIndex"
+                       (page)="onPageChange($event)"
                        showFirstLastButtons
                        aria-label="Select page of periodic elements">
         </mat-paginator>

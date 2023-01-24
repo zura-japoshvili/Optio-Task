@@ -7,19 +7,16 @@ import {
 } from '@angular/core';
 import {AdminService} from "../../core/services/admin.service";
 import {RolesInt} from "../../core/interfaces/rolesInt";
-import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
+import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {UserDataInt} from "../../core/interfaces/UserDataInt";
 import {catchError, debounceTime, of, tap} from "rxjs";
 import {MatTableDataSource} from "@angular/material/table";
-import {MatPaginator} from "@angular/material/paginator";
+import {MatPaginator, PageEvent} from "@angular/material/paginator";
 import {MatDrawer} from "@angular/material/sidenav";
 import {MatSort} from "@angular/material/sort";
 import {MatSnackBar} from "@angular/material/snack-bar";
 import {ActivatedRoute, Router} from "@angular/router";
-import { RouterModule } from '@angular/router';
-
-
-
+import {FindUserInt} from "../../core/interfaces/findUserInt";
 
 
 @Component(
@@ -39,13 +36,14 @@ export class AdminPanelComponent implements OnInit {
 
   // This data is for user list and list pagination
   displayedColumns: string[] = ['email', 'firstName', 'lastName', 'roles', "locked", 'action'];
-  dataSource = new MatTableDataSource<UserDataInt>([]);
+  dataSource =  new MatTableDataSource<UserDataInt>([]);
 
-  private paginator!: MatPaginator;
-  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
-    this.paginator = mp;
-  }
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+
+  totalCount: number = 0;
+  pageSize: number = 10;
+  pageIndex: number = 0;
 
   // for check if update form is opened or not
   public isUpdateOpen = false;
@@ -79,18 +77,17 @@ export class AdminPanelComponent implements OnInit {
     // and a list of users matching its value is searched.
     // If the search field is empty, all user data will be loaded
     this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
-      this._adminService.findUser({search: text, pageSize: 500}).pipe(
-        tap((value) => {
-          this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
+      this._adminService.findUser({search: text, pageSize: this.pageSize}).subscribe({
+        next: ({ data }) => {
+          this.dataSource.data = data.entities;
+          this.totalCount = data.total
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
-          this._change.detectChanges();
-        }),
-        catchError(err =>{
-          this.openSnackBar("Could not load user data !", "Okey");
-          return of ([]);
-        })
-      ).subscribe()
+        },
+        error: (err) => (
+          this.openSnackBar("Could not load user data !", "Okey")
+        )
+      })
     })
   }
 
@@ -122,42 +119,56 @@ export class AdminPanelComponent implements OnInit {
     })
 
     // when component is loaded, it's automatically update user roles
-    this._adminService.getRoles().pipe(
-      tap((value) => {
-        this.UserRoles = value
-        this._change.detectChanges();
-      }),
-      catchError(err => {
+    this._adminService.getRoles().subscribe({
+       next: (value) => {
+         this.UserRoles = value
+       },
+      error: (err) => {
         this.openSnackBar("Unfortunately, the user roles could not be loaded", "Okey");
-        return of ([]);
-      })
-    ).subscribe();
+      }
+    });
 
     // when component loads, it's automatically load every user data in table
-    this._adminService.findUser({search: '', pageSize: 500,}).pipe(
-      tap((value) => {
-        console.log(value)
-        this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
-        this._change.detectChanges();
-      }),
-      catchError(err =>{
-        this.openSnackBar("Could not load user data !", "Okey");
-          return of ([]);
-      })
-    ).subscribe();
-
+    this.getUser({search: '', pageSize: this.pageSize, pageIndex: this.pageIndex});
   }
 
+  public getUser(data: FindUserInt){
+    console.log(data)
+    this._adminService.findUser(data).subscribe(
+      {
+        next: ({data}) => {
+          console.log(data)
+          this.dataSource.data = data.entities;
+          this.totalCount = data.total
+          this.dataSource.paginator = this.paginator;
+          this.dataSource.sort = this.sort;
+        },
+        error: (err) => (
+          this.openSnackBar(err.message, "Okey")
+        )
+      }
+    );
+  }
 
   // For pop up alerts
-  openSnackBar(message: string, action: string) {
+  public openSnackBar(message: string, action: string) {
     this._snackBar.open(message, action);
+  }
+  // for pagination
+  public onPageChange(event: PageEvent) {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this._adminService.findUser({search: this.searchField.value, sortBy: "email", sortDirection: "asc", pageIndex: this.pageIndex, pageSize: this.pageSize})
+      .subscribe((value) => {
+        console.log(value.data.entities)
+        this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
+        this.totalCount = value.data.total
+        this.dataSource.paginator
+    })
   }
 
   // save new userdata in db
-  saveUser() {
+  public saveUser() {
     const lockedStatus = this.userForm.value!.userStatus! === 'active';
     let userData = {
       firstName: this.userForm.value!.firstName!,
@@ -167,8 +178,8 @@ export class AdminPanelComponent implements OnInit {
       roles: this.selectedRoles
     }
 
-    this._adminService.saveUser(userData).pipe(
-      tap((value) => {
+    this._adminService.saveUser(userData).subscribe({
+      next: (value) => {
         // When the user data is stored in the database, the data in the URL will be deleted.
         // and also reset form value
         this.userForm.reset();
@@ -177,18 +188,14 @@ export class AdminPanelComponent implements OnInit {
           queryParams: {},
           queryParamsHandling: "merge",
         });
-
-
         this.dataSource.data.push(value.data);
         this.dataSource.paginator = this.paginator;
         this.dataSource.sort = this.sort;
-        this._change.detectChanges();
-      }),
-      catchError(err => {
+      },
+      error: (err) =>{
         this.openSnackBar("Unfortunately, a new user could not be added", "Okey");
-        return of ([]);
-      })
-    ).subscribe();
+      }
+    });
   }
 
   // for remove user role
@@ -248,8 +255,8 @@ export class AdminPanelComponent implements OnInit {
       roles: this.selectedRoles
     }
 
-    this._adminService.saveUser(userData).pipe(
-      tap((value) => {
+    this._adminService.saveUser(userData).subscribe({
+      next: (value) =>{
         const userToUpdate = this.dataSource.data.find(user => user.id === userData.id);
         if(userToUpdate){
           userToUpdate.firstName = userData.firstName;
@@ -264,20 +271,18 @@ export class AdminPanelComponent implements OnInit {
           this.userForm.reset();
           this._change.detectChanges();
         }
-      }),
-      catchError(err => {
-
+      },
+      error: (err) => {
         this.openSnackBar("Unfortunately, the user data could not be updated", "Okey");
-        return of ([]);
-      })
-    ).subscribe();
+      }
+    });
   }
 
   // deletes user data from DB as well as the table
   deleteUser(data: UserDataInt){
     if (confirm(`Are you sure to delete ${data.firstName} ${data.lastName}`)){
-      this._adminService.deleteUser(data.id!).pipe(
-        tap((value) => {
+      this._adminService.deleteUser(data.id!).subscribe({
+        next: (value) => {
           if (value.success){
             // Delete the user from the data source
             this.dataSource.data = this.dataSource.data.filter(user => user.id !== data.id);
@@ -287,12 +292,11 @@ export class AdminPanelComponent implements OnInit {
           }else{
             this.openSnackBar("User data could not be deleted!", "Okey");
           }
-        }),
-        catchError(err => {
+        },
+        error: (err) => {
           this.openSnackBar("User data could not be deleted!", "Okey");
-          return of ([]);
-        })
-      ).subscribe();
+        }
+      });
     }
   }
 }
