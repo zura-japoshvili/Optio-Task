@@ -18,9 +18,9 @@ This project is an Angular application that serves as a user control panel. It h
 2. Navigate to the project directory
    `cd Optio-Task`
 3. Install the dependencies
-  `npm install`
+   `npm install`
 4. Run the application
-  `ng serve` 
+   `ng serve`
 ## Built With
 - [Angular](https://angular.io/) - The web framework used
 - [Angular Material](https://material.angular.io/) - The UI library used
