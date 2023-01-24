@@ -9,11 +9,11 @@ import {AdminService} from "../../core/services/admin.service";
 import {RolesInt} from "../../core/interfaces/rolesInt";
 import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {UserDataInt} from "../../core/interfaces/UserDataInt";
-import {catchError, debounceTime, of, tap} from "rxjs";
+import {debounceTime} from "rxjs";
 import {MatTableDataSource} from "@angular/material/table";
 import {MatPaginator, PageEvent} from "@angular/material/paginator";
 import {MatDrawer} from "@angular/material/sidenav";
-import {MatSort} from "@angular/material/sort";
+import {MatSort, Sort} from "@angular/material/sort";
 import {MatSnackBar} from "@angular/material/snack-bar";
 import {ActivatedRoute, Router} from "@angular/router";
 import {FindUserInt} from "../../core/interfaces/findUserInt";
@@ -35,15 +35,17 @@ export class AdminPanelComponent implements OnInit {
 
 
   // This data is for user list and list pagination
-  displayedColumns: string[] = ['email', 'firstName', 'lastName', 'roles', "locked", 'action'];
-  dataSource =  new MatTableDataSource<UserDataInt>([]);
+  public displayedColumns: string[] = ['email', 'firstName', 'lastName', 'roles', "locked", 'action'];
+  public dataSource =  new MatTableDataSource<UserDataInt>([]);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  totalCount: number = 0;
-  pageSize: number = 10;
-  pageIndex: number = 0;
+  public totalCount: number = 0;
+  public pageSize: number = 10;
+  public pageIndex: number = 0;
+  public sortBy: string = 'email';
+  public sortDirection: string = 'asc';
 
   // for check if update form is opened or not
   public isUpdateOpen = false;
@@ -77,7 +79,7 @@ export class AdminPanelComponent implements OnInit {
     // and a list of users matching its value is searched.
     // If the search field is empty, all user data will be loaded
     this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
-      this._adminService.findUser({search: text, pageSize: this.pageSize}).subscribe({
+      this._adminService.findUser({search: text, sortDirection: this.sortDirection, sortBy: this.sortBy, pageSize: this.pageSize}).subscribe({
         next: ({ data }) => {
           this.dataSource.data = data.entities;
           this.totalCount = data.total
@@ -129,19 +131,17 @@ export class AdminPanelComponent implements OnInit {
     });
 
     // when component loads, it's automatically load every user data in table
-    this.getUser({search: '', pageSize: this.pageSize, pageIndex: this.pageIndex});
+    this.getUser({search: '', sortBy: this.sortBy, sortDirection: this.sortDirection ,pageSize: this.pageSize, pageIndex: this.pageIndex});
   }
 
   public getUser(data: FindUserInt){
-    console.log(data)
     this._adminService.findUser(data).subscribe(
       {
         next: ({data}) => {
-          console.log(data)
-          this.dataSource.data = data.entities;
+          console.log(data.entities)
+          this.dataSource = new MatTableDataSource<UserDataInt>(data.entities);
           this.totalCount = data.total
-          this.dataSource.paginator = this.paginator;
-          this.dataSource.sort = this.sort;
+          this.dataSource.paginator
         },
         error: (err) => (
           this.openSnackBar(err.message, "Okey")
@@ -154,17 +154,24 @@ export class AdminPanelComponent implements OnInit {
   public openSnackBar(message: string, action: string) {
     this._snackBar.open(message, action);
   }
-  // for pagination
+  // for table pagination
   public onPageChange(event: PageEvent) {
     this.pageIndex = event.pageIndex;
     this.pageSize = event.pageSize;
-    this._adminService.findUser({search: this.searchField.value, sortBy: "email", sortDirection: "asc", pageIndex: this.pageIndex, pageSize: this.pageSize})
+    this._adminService.findUser({search: this.searchField.value, sortBy: this.sortBy,
+      sortDirection: this.sortDirection, pageIndex: this.pageIndex, pageSize: this.pageSize})
       .subscribe((value) => {
         console.log(value.data.entities)
         this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
         this.totalCount = value.data.total
         this.dataSource.paginator
     })
+  }
+
+  public sortData(sort: Sort){
+    this.sortBy = sort.active
+    this.sortDirection = sort.direction;
+    this.getUser({search: this.searchField.value, sortBy: this.sortBy, sortDirection: this.sortDirection ,pageSize: this.pageSize, pageIndex: this.pageIndex});
   }
 
   // save new userdata in db
@@ -188,9 +195,8 @@ export class AdminPanelComponent implements OnInit {
           queryParams: {},
           queryParamsHandling: "merge",
         });
-        this.dataSource.data.push(value.data);
-        this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
+        // after creating a new user in DB, we will request new data
+        this.getUser({search: this.searchField.value, sortBy: this.sortBy, sortDirection: this.sortDirection ,pageSize: this.pageSize, pageIndex: this.pageIndex});
       },
       error: (err) =>{
         this.openSnackBar("Unfortunately, a new user could not be added", "Okey");
