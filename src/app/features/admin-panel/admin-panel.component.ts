@@ -85,6 +85,9 @@ export class AdminPanelComponent implements OnInit {
           this.totalCount = data.total
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
+
+          this._change.detectChanges();
+
         },
         error: (err) => (
           this.openSnackBar("Could not load user data !", "Okey")
@@ -97,27 +100,54 @@ export class AdminPanelComponent implements OnInit {
     // When changes are made to the form, it will automatically be saved
     // in the application URL, so that the data entered from the beginning
     // will not be lost and the user will not have to enter it again.
-    this.userForm.valueChanges.subscribe(() => {
-      const {firstName, lastName, email, userStatus} = this.userForm.value;
-      this.router.navigate(['/admin-panel'], {
-        queryParams: { firstName, lastName, email, userStatus },
-        queryParamsHandling: "merge",
-      });
-    });
+    // this.userForm.valueChanges.subscribe(() => {
+    //   const {firstName, lastName, email, userStatus} = this.userForm.value;
+    //   this.router.navigate(['/admin-panel'], {
+    //     queryParams: { firstName, lastName, email, userStatus },
+    //     queryParamsHandling: "merge",
+    //   });
+    // });
+
     // After the refresh, the data will be updated automatically.
     this.route.queryParamMap.subscribe(queryParamMap =>{
-      if (queryParamMap.has('firstName')) {
-        this.userForm.get('firstName')?.setValue(queryParamMap.get('firstName'));
+      // if (queryParamMap.has('firstName')) {
+      //   this.userForm.get('firstName')?.setValue(queryParamMap.get('firstName'));
+      // }
+      // if (queryParamMap.has('lastName')) {
+      //   this.userForm.get('lastName')?.setValue(queryParamMap.get('lastName'));
+      // }
+      // if (queryParamMap.has('email')) {
+      //   this.userForm.get('email')?.setValue(queryParamMap.get('email'));
+      // }
+      // if (queryParamMap.has('userStatus')) {
+      //   this.userForm.get('userStatus')?.setValue(queryParamMap.get('userStatus'));
+      // }
+      if (queryParamMap.has('pageSize')){
+        let pageSize = queryParamMap.get('pageSize');
+        if(pageSize){
+          this.pageSize = Number(pageSize);
+        }
       }
-      if (queryParamMap.has('lastName')) {
-        this.userForm.get('lastName')?.setValue(queryParamMap.get('lastName'));
+      if (queryParamMap.has('pageIndex')){
+        let pageIndex = queryParamMap.get('pageIndex');
+        if(pageIndex){
+          this.pageIndex = Number(pageIndex);
+        }
       }
-      if (queryParamMap.has('email')) {
-        this.userForm.get('email')?.setValue(queryParamMap.get('email'));
+      if (queryParamMap.has('sortBy')){
+        const sortBy = queryParamMap.get('sortBy')
+        if (sortBy)
+          this.sortBy = sortBy
+
       }
-      if (queryParamMap.has('userStatus')) {
-        this.userForm.get('userStatus')?.setValue(queryParamMap.get('userStatus'));
+      if (queryParamMap.has('sortD')){
+        const sortDirection = queryParamMap.get('sortD')
+        if (sortDirection)
+          this.sortDirection = sortDirection
       }
+      // when component loads, it's automatically load every user data in table
+      this.getUser({search: this.searchField.value, sortBy: this.sortBy,
+        sortDirection: this.sortDirection, pageIndex: this.pageIndex, pageSize: this.pageSize});
     })
 
     // when component is loaded, it's automatically update user roles
@@ -129,19 +159,19 @@ export class AdminPanelComponent implements OnInit {
         this.openSnackBar("Unfortunately, the user roles could not be loaded", "Okey");
       }
     });
-
-    // when component loads, it's automatically load every user data in table
-    this.getUser({search: '', sortBy: this.sortBy, sortDirection: this.sortDirection ,pageSize: this.pageSize, pageIndex: this.pageIndex});
   }
 
+  // fetching user data from Db
   public getUser(data: FindUserInt){
     this._adminService.findUser(data).subscribe(
       {
         next: ({data}) => {
           console.log(data.entities)
-          this.dataSource = new MatTableDataSource<UserDataInt>(data.entities);
+          this.dataSource = new MatTableDataSource(data.entities);
           this.totalCount = data.total
           this.dataSource.paginator
+
+          this._change.detectChanges();
         },
         error: (err) => (
           this.openSnackBar(err.message, "Okey")
@@ -165,12 +195,23 @@ export class AdminPanelComponent implements OnInit {
         this.dataSource = new MatTableDataSource<UserDataInt>(value.data.entities);
         this.totalCount = value.data.total
         this.dataSource.paginator
+
+        // save page info in URL
+        this.router.navigate(['/admin-panel'], {
+          queryParams: { pageIndex: this.pageIndex, pageSize: this.pageSize },
+          queryParamsHandling: "merge",
+        });
     })
   }
 
+  // For sorting table data
   public sortData(sort: Sort){
     this.sortBy = sort.active
     this.sortDirection = sort.direction;
+    this.router.navigate(['/admin-panel'], {
+      queryParams: { sortBy: this.sortBy, sortD: this.sortDirection },
+      queryParamsHandling: "merge",
+    });
     this.getUser({search: this.searchField.value, sortBy: this.sortBy, sortDirection: this.sortDirection ,pageSize: this.pageSize, pageIndex: this.pageIndex});
   }
 
