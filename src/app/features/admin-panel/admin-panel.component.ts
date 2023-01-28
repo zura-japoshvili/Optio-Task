@@ -79,6 +79,11 @@ export class AdminPanelComponent implements OnInit {
     // and a list of users matching its value is searched.
     // If the search field is empty, all user data will be loaded
     this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
+      this.router.navigate(['/admin-panel'], {
+        queryParams: { search: this.searchField.value},
+        queryParamsHandling: "merge",
+      });
+
       this._adminService.findUser({search: text, sortDirection: this.sortDirection, sortBy: this.sortBy, pageSize: this.pageSize}).subscribe({
         next: ({ data }) => {
           this.dataSource.data = data.entities;
@@ -122,6 +127,9 @@ export class AdminPanelComponent implements OnInit {
       // if (queryParamMap.has('userStatus')) {
       //   this.userForm.get('userStatus')?.setValue(queryParamMap.get('userStatus'));
       // }
+      if(queryParamMap.has('search')){
+        this.searchField.setValue(queryParamMap.get('search'));
+      }
       if (queryParamMap.has('pageSize')){
         let pageSize = queryParamMap.get('pageSize');
         if(pageSize){
@@ -304,20 +312,14 @@ export class AdminPanelComponent implements OnInit {
 
     this._adminService.saveUser(userData).subscribe({
       next: (value) =>{
-        const userToUpdate = this.dataSource.data.find(user => user.id === userData.id);
-        if(userToUpdate){
-          userToUpdate.firstName = userData.firstName;
-          userToUpdate.lastName = userData.lastName;
-          userToUpdate.email = userData.email;
-          userToUpdate.locked = userData.locked;
-          userToUpdate.roles = userData.roles;
+        const userToUpdate = this.dataSource.data.findIndex(user => user.id === userData.id);
+        this.dataSource.data[userToUpdate] = userData;
 
-          // after update user, it's clears form and close sidebar
-          this.openCloseDrawer(false);
+        // after update user, it's clears form and close sidebar
+        this.openCloseDrawer(false);
 
-          this.userForm.reset();
-          this._change.detectChanges();
-        }
+        // This will trigger a change detection and update the table with the new data.
+        this.dataSource.data = [...this.dataSource.data];
       },
       error: (err) => {
         this.openSnackBar("Unfortunately, the user data could not be updated", "Okey");
