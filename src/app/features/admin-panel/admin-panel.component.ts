@@ -78,26 +78,18 @@ export class AdminPanelComponent implements OnInit {
     // When using the search field, a request is generated every half second
     // and a list of users matching its value is searched.
     // If the search field is empty, all user data will be loaded
-    this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string) => {
+    this.searchField.valueChanges.pipe(debounceTime(500)).subscribe((text: string | null) => {
       this.router.navigate(['/admin-panel'], {
         queryParams: { search: this.searchField.value},
         queryParamsHandling: "merge",
       });
-
-      this._adminService.findUser({search: text, sortDirection: this.sortDirection, sortBy: this.sortBy, pageSize: this.pageSize}).subscribe({
-        next: ({ data }) => {
-          this.dataSource.data = data.entities;
-          this.totalCount = data.total
-          this.dataSource.paginator = this.paginator;
-          this.dataSource.sort = this.sort;
-
-          this._change.detectChanges();
-
-        },
-        error: (err) => (
-          this.openSnackBar("Could not load user data !", "Okey")
-        )
-      })
+      // if the search field isn't empty, it searches users in DB
+      if (text){
+        this.getUser({search: text, sortDirection: this.sortDirection, sortBy: this.sortBy, pageSize: this.pageSize})
+        // else it loads every user's data
+      }else {
+       this.getUser({search: '', sortDirection: this.sortDirection, sortBy: this.sortBy, pageSize: this.pageSize});
+      }
     })
   }
 
@@ -128,7 +120,8 @@ export class AdminPanelComponent implements OnInit {
       //   this.userForm.get('userStatus')?.setValue(queryParamMap.get('userStatus'));
       // }
       if(queryParamMap.has('search')){
-        this.searchField.setValue(queryParamMap.get('search'));
+        if (queryParamMap.get('search'))
+          this.searchField.setValue(queryParamMap.get('search'))
       }
       if (queryParamMap.has('pageSize')){
         let pageSize = queryParamMap.get('pageSize');

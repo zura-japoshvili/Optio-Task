@@ -1,5 +1,5 @@
 export interface FindUserInt {
-  search: string,
+  search: string | null,
   sortBy?: string,
   sortDirection?: string,
   pageIndex?: number,
